@@ -1,11 +1,11 @@
-#Requirements
+# Requirements
 
    Node.js (LTS recommended)
    npm (comes with Node.js)
    Expo CLI (used via npx command)
    Expo Go (for running on device / emulator)
 
-#Installation
+# Installation
 
    1. Extract folder
    2. Open terminal in project root (where you find 'package.json')
@@ -14,7 +14,7 @@
    npm install
    ```
 
-#Running the project
+# Running the project
 
    Start Expo dev server:
    ```bash
