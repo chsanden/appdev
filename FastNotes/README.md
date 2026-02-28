@@ -23,7 +23,7 @@
 
    Then:
    1. Scan the QR code using Expo Go app on mobile device
-   **or**   
+   - **or**   
    2. Run the app in an emulator from the Expo developer tools
 
 
