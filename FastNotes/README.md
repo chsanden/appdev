@@ -1,9 +1,9 @@
 # Requirements
 
-   Node.js (LTS recommended)
-   npm (comes with Node.js)
-   Expo CLI (used via npx command)
-   Expo Go (for running on device / emulator)
+   - Node.js (LTS recommended)
+   - npm (comes with Node.js)
+   - Expo CLI (used via npx command)
+   - Expo Go (for running on device / emulator)
 
 # Installation
 
