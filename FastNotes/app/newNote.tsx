@@ -13,20 +13,34 @@ import { useHeaderHeight } from "@react-navigation/elements";
 
 export default function NewNoteScreen() 
 {
-    const { addNote } = useNotes();
-    const[title, setTitle] = useState("");
-    const [content, setContent] = useState("");
-    const insets = useSafeAreaInsets();
-    const headerHeight = useHeaderHeight();
-    const [contentHeight, setContentHeight] = useState(160);
-    const scrollRef = useRef<ScrollView>(null);
+    const { addNote, errorMessage } = useNotes()
+    const [title, setTitle] = useState("")
+    const [content, setContent] = useState("")
+    const [isSaving, setIsSaving] = useState(false)
+    const [localErrorMessage, setLocalErrorMessage] = useState<string | null>(null)
+    const insets = useSafeAreaInsets()
+    const headerHeight = useHeaderHeight()
+    const [contentHeight, setContentHeight] = useState(160)
+    const scrollRef = useRef<ScrollView>(null)
 
-    const onSave = () => 
+    const onSave = async () => 
     {
-        if(!title.trim() && !content.trim()) return;
-        addNote(title, content);
-        router.back();
-    };
+        if(!title.trim() || !content.trim()) {
+            setLocalErrorMessage("Title and content are required.")
+            return
+        }
+
+        setIsSaving(true)
+        setLocalErrorMessage(null)
+
+        const wasSaved = await addNote(title, content)
+
+        setIsSaving(false)
+
+        if (wasSaved) {
+            router.back()
+        }
+    }
 
     return (
       <KeyboardAvoidingView style={{ flex: 1}} behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -43,15 +57,25 @@ export default function NewNoteScreen()
                 <TextInput value={content} onChangeText={setContent} placeholder="Write your note..."
                 style={[styles.input, { height: Math.max(160, contentHeight) }]} multiline 
                 textAlignVertical="top"
-                onContentSizeChange={(e) => {setContentHeight(e.nativeEvent.contentSize.height);
+                onContentSizeChange={(e) => {setContentHeight(e.nativeEvent.contentSize.height); 
                     scrollRef.current?.scrollToEnd({ animated: true });
                 }}/>
 
+                {localErrorMessage ? (
+                    <Text style={styles.errorText}>{localErrorMessage}</Text>
+                ) : null}
+
+                {!localErrorMessage && errorMessage ? (
+                    <Text style={styles.errorText}>{errorMessage}</Text>
+                ) : null}
+
             </ScrollView>
             <View>
-                <Pressable onPress={onSave}
+                <Pressable disabled={isSaving} onPress={onSave}
                     style={[styles.saveFloating, { bottom: insets.bottom + 16 }]}>
-                    <Text style={styles.saveFloatingText}>Save</Text>
+                    <Text style={styles.saveFloatingText}>
+                        {isSaving ? "Saving..." : "Save"}
+                    </Text>
                 </Pressable>
             </View>
         </View>
@@ -101,6 +125,9 @@ const styles = StyleSheet.create(
             color: "white",
             fontSize: 16,
             fontWeight: "700"
-        }
+        },
+        errorText: {
+            color: "#c62828"
+        },
     }
 );
