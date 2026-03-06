@@ -1,7 +1,8 @@
-import { supabase } from "@/libs/supabase";
-import { Link, Stack } from "expo-router";
-import { useState } from "react";
+import { supabase } from "@/libs/supabase"
+import { Link, Stack } from "expo-router"
+import { useState } from "react"
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { useAppTheme } from "@/src/theme/AppThemeProvider"
 
 export default function SignupScreen(){
     const [email, setEmail] = useState('')
@@ -9,6 +10,7 @@ export default function SignupScreen(){
     const [errorMessage, setErrorMessage] = useState<string | null>(null)
     const [successMessage, setSuccessMessage] = useState<string | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const { colorScheme, palette } = useAppTheme()
 
     const onSignup = async () => {
         if(!email.trim() || !password){
@@ -56,30 +58,30 @@ export default function SignupScreen(){
     return (
     <>
     <Stack.Screen options={{title: "Signup"}}/>
-    <View style={styles.container}>
-        <Text style={styles.title}>Sign up</Text>
+    <View style={[styles.container, { backgroundColor: palette.background }]}>
+        <Text style={[styles.title, { color: palette.text }]}>Sign up</Text>
 
-        <Text style={styles.label}>E-mail</Text>
+        <Text style={[styles.label, { color: palette.text }]}>E-mail</Text>
         <TextInput
             autoCapitalize="none"
             autoComplete="email"
             keyboardType="email-address"
             onChangeText={setEmail}
             placeholder="name@email.com"
-            placeholderTextColor="#666"
-            style={styles.input}
+            placeholderTextColor={palette.mutedText}
+            style={[styles.input, { color: palette.text, backgroundColor: palette.input, borderColor: palette.border }]}
             value={email}
         />
 
-        <Text style={styles.label} >Password</Text>
+        <Text style={[styles.label, { color: palette.text }]} >Password</Text>
         <TextInput 
             autoCapitalize="none"
             autoComplete="password"
             onChangeText={setPassword}
             placeholder="Password"
-            placeholderTextColor="#666"
+            placeholderTextColor={palette.mutedText}
             secureTextEntry
-            style={styles.input}
+            style={[styles.input, { color: palette.text, backgroundColor: palette.input, borderColor: palette.border }]}
             value={password}
         />
 
@@ -106,7 +108,7 @@ export default function SignupScreen(){
         </Pressable>
 
         <Link href="/login" style={styles.link}>
-          <Text style={styles.linkText}>Already have an account? Log in</Text>
+          <Text style={[styles.linkText, { color: colorScheme === "dark" ? "#8ab4ff" : "#0b57d0" }]}>Already have an account? Log in</Text>
         </Link>
 
     </View>
@@ -121,26 +123,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 24,
     gap: 12,
-    backgroundColor: '#f7f7f7',
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#111',
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#111',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#cfcfcf',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: '#111',
-    backgroundColor: '#fff',
   },
   errorText: {
     color: '#c62828',

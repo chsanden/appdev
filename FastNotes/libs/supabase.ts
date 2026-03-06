@@ -1,12 +1,11 @@
-import { createClient } from '@supabase/supabase-js';
-import { deleteItemAsync, getItemAsync, setItemAsync } from 'expo-secure-store';
-import 'react-native-url-polyfill/auto';
+import { createClient } from '@supabase/supabase-js'
+import { deleteItemAsync, getItemAsync, setItemAsync } from 'expo-secure-store'
+import 'react-native-url-polyfill/auto'
 import Constants from "expo-constants"
-import { Platform } from 'react-native';
+import { Platform } from 'react-native'
 
 const ExpoSecureStoreAdapter = {
   getItem: (key: string) => {
-    console.debug("getItem", { key, getItemAsync })
     return getItemAsync(key)
   },
   setItem: (key: string, value: string) => {
@@ -18,12 +17,12 @@ const ExpoSecureStoreAdapter = {
   removeItem: (key: string) => {
     return deleteItemAsync(key)
   },
-};
+}
 
 const extra = (Constants.expoConfig?.extra ?? Constants.manifest?.extra) as {
-  supabaseUrl?: string;
-  supabaseKey?: string;
-};
+  supabaseUrl?: string
+  supabaseKey?: string
+}
 
 const supabaseUrl = extra?.supabaseUrl
 const supabaseAnonKey = extra?.supabaseKey

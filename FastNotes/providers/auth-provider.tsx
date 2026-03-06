@@ -2,50 +2,41 @@ import { AuthContext } from '@/hooks/use-auth-context'
 import { supabase } from '@/libs/supabase'
 import { PropsWithChildren, useEffect, useState } from 'react'
 
+const buildClaims = (user?: { id: string; email?: string | null } | null) =>
+  user
+    ? {
+        sub: user.id,
+        email: user.email,
+      }
+    : null
+
 export default function AuthProvider({ children }: PropsWithChildren) {
   const [claims, setClaims] = useState<Record<string, any> | undefined | null>()
   const [profile, setProfile] = useState<any>()
   const [isLoading, setIsLoading] = useState<boolean>(true)
 
   useEffect(() => {
-    const syncAuthState = async () => {
-      setIsLoading(true)
-
+    const hydrateSession = async () => {
       const {
-        data: { user },
+        data: { session },
         error,
-      } = await supabase.auth.getUser()
+      } = await supabase.auth.getSession()
 
       if (error) {
-        console.error('Error fetching user:', error)
+        console.error('Error hydrating session:', error)
       }
 
-      setClaims(
-        user
-          ? {
-              sub: user.id,
-              email: user.email,
-            }
-          : null
-      )
+      setClaims(buildClaims(session?.user))
       setIsLoading(false)
     }
 
-    void syncAuthState()
+    void hydrateSession()
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      console.log('Auth state changed:', { event: _event })
-
-      setClaims(
-        session?.user
-          ? {
-              sub: session.user.id,
-              email: session.user.email,
-            }
-          : null
-      )
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setClaims(buildClaims(session?.user))
+      setIsLoading(false)
     })
 
     return () => {

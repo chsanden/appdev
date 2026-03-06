@@ -148,7 +148,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
         // Poll for remote changes so other users' edits appear without a manual refresh.
         const intervalId = setInterval(() => {
             void loadNotes()
-        }, 60000)
+        }, 30000)
 
         return () => {
             clearInterval(intervalId)

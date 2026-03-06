@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { Link, Stack } from 'expo-router'
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Appearance, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
 import { supabase } from '@/libs/supabase'
+import { useAppTheme } from '@/src/theme/AppThemeProvider'
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const { colorScheme, palette } = useAppTheme()
 
   const onLogin = async () => {
     if (!email.trim() || !password) {
@@ -33,30 +35,30 @@ export default function LoginScreen() {
   return (
     <>
       <Stack.Screen options={{ title: 'Login' }} />
-      <View style={styles.container}>
-        <Text style={styles.title}>Login</Text>
+      <View style={[styles.container, { backgroundColor: palette.background }]}>
+        <Text style={[styles.title, { color: palette.text }]}>Login</Text>
 
-        <Text style={styles.label}>E-mail</Text>
+        <Text style={[styles.label, { color: palette.text }]}>E-mail</Text>
         <TextInput
             autoCapitalize="none"
             autoComplete="email"
             keyboardType="email-address"
             onChangeText={setEmail}
             placeholder="name@email.com"
-            placeholderTextColor="#666"
-            style={styles.input}
+            placeholderTextColor={palette.mutedText}
+            style={[styles.input, { color: palette.text, backgroundColor: palette.input, borderColor: palette.border }]}
             value={email}
         />
 
-        <Text style={styles.label}>Password</Text>
+        <Text style={[styles.label, { color: palette.text }]}>Password</Text>
         <TextInput
             autoCapitalize="none"
             autoComplete="password"
             onChangeText={setPassword}
             placeholder="Password"
-            placeholderTextColor="#666"
+            placeholderTextColor={palette.mutedText}
             secureTextEntry
-            style={styles.input}
+            style={[styles.input, { color: palette.text, backgroundColor: palette.input, borderColor: palette.border }]}
             value={password}
         />
 
@@ -79,7 +81,7 @@ export default function LoginScreen() {
         </Pressable>
 
         <Link href="/signup" style={styles.link}>
-          <Text style={styles.linkText}>Create a new account</Text>
+          <Text style={[styles.linkText, { color: colorScheme === "dark" ? "#8ab4ff" : "#0b57d0" }]}>Create a new account</Text>
         </Link>
       </View>
     </>
@@ -92,26 +94,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 24,
     gap: 12,
-    backgroundColor: '#f7f7f7',
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#111',
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#111',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#cfcfcf',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: '#111',
-    backgroundColor: '#fff',
   },
   errorText: {
     color: '#c62828',
@@ -121,7 +117,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
-    backgroundColor: '#111',
+    backgroundColor: Appearance.getColorScheme() === "light" ? '#000000':'#696969',
     marginTop: 8,
   },
   loginButtonPressed: {

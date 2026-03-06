@@ -1,20 +1,23 @@
-import { useMemo, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import { router } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuthContext } from "@/hooks/use-auth-context";
-import { useNotes } from "@/src/notes/NotesContext";
+import { useMemo, useState } from "react"
+import { Appearance, FlatList, Pressable, StyleSheet, Text, View } from "react-native"
+import { router } from "expo-router"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { useAuthContext } from "@/hooks/use-auth-context"
+import { useNotes } from "@/src/notes/NotesContext"
 import SignOutButton from '@/components/social-auth-buttons/sign-out-button'
+import { useAppTheme } from "@/src/theme/AppThemeProvider"
+
 
 type TabKey = "my-notes" | "work-notes"
 
 export default function HomeScreen() 
 {
-  const { claims } = useAuthContext();
-  const { errorMessage, isLoading, notes } = useNotes();
-  const [activeTab, setActiveTab] = useState<TabKey>("my-notes");
-  const insets = useSafeAreaInsets();
-  const userId = claims?.sub;
+  const { claims } = useAuthContext()
+  const { errorMessage, isLoading, notes } = useNotes()
+  const [activeTab, setActiveTab] = useState<TabKey>("my-notes")
+  const insets = useSafeAreaInsets()
+  const { colorScheme, palette } = useAppTheme()
+  const userId = claims?.sub
 
   const filteredNotes = useMemo(
     () =>
@@ -22,7 +25,7 @@ export default function HomeScreen()
         activeTab === "my-notes" ? note.createdBy === userId : note.createdBy !== userId
       ),
     [activeTab, notes, userId]
-  );
+  )
 
   const emptyText =
     activeTab === "my-notes"
@@ -39,10 +42,10 @@ export default function HomeScreen()
     return parsed.toLocaleString()
   }
 
-return (
-    <View style={styles.container}>
-      <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
-        <Text style={styles.screenTitle}>FastNotes</Text>
+  return (
+    <View style={[styles.container, { backgroundColor: palette.background }]}>
+      <View style={[styles.topBar, { paddingTop: insets.top + 8, backgroundColor: palette.surface, borderBottomColor: palette.border }]}>
+        <Text style={[styles.screenTitle, { color: palette.text }]}>FastNotes</Text>
         <SignOutButton />
       </View>
 
@@ -51,12 +54,14 @@ return (
           onPress={() => setActiveTab("my-notes")}
           style={[
             styles.tabButton,
+            { backgroundColor: palette.elevated, borderColor: palette.border },
             activeTab === "my-notes" ? styles.tabButtonActive : null,
           ]}
         >
           <Text
             style={[
               styles.tabButtonText,
+              { color: palette.text },
               activeTab === "my-notes" ? styles.tabButtonTextActive : null,
             ]}
           >
@@ -67,12 +72,14 @@ return (
           onPress={() => setActiveTab("work-notes")}
           style={[
             styles.tabButton,
+            { backgroundColor: palette.elevated, borderColor: palette.border },
             activeTab === "work-notes" ? styles.tabButtonActive : null,
           ]}
         >
           <Text
             style={[
               styles.tabButtonText,
+              { color: palette.text },
               activeTab === "work-notes" ? styles.tabButtonTextActive : null,
             ]}
           >
@@ -94,7 +101,7 @@ return (
         }
         renderItem={({ item }) => (
           <Pressable
-            style={styles.noteItem}
+            style={[styles.noteItem, { backgroundColor: palette.surface, borderColor: palette.border }]}
             onPress={() =>
               router.push({
                 pathname: "/detail",
@@ -102,10 +109,10 @@ return (
               })
             }
           >
-            <Text style={styles.noteTitle}>{item.title}</Text>
-            <Text numberOfLines={2} style={styles.notePreview}>{item.content}</Text>
-            <Text style={styles.noteMeta}>Created by {item.creatorLabel}</Text>
-            <Text style={styles.noteMeta}>
+            <Text style={[styles.noteTitle, { color: palette.text }]}>{item.title}</Text>
+            <Text numberOfLines={2} style={[styles.notePreview, { color: palette.mutedText }]}>{item.content}</Text>
+            <Text style={[styles.noteMeta, { color: palette.mutedText }]}>Created by {item.creatorLabel}</Text>
+            <Text style={[styles.noteMeta, { color: palette.mutedText }]}>
               Last changed {formatTimestamp(item.lastChangedAt)}
             </Text>
           </Pressable>
@@ -114,14 +121,14 @@ return (
 
       {activeTab === "my-notes" ? (
         <Pressable
-          style={[styles.fab, { bottom: insets.bottom + 24, right: insets.right + 40 }]}
+          style={[styles.fab, { bottom: insets.bottom + 24, right: insets.right + 40, backgroundColor: palette.accent }]}
           onPress={() => router.push("/newNote")}
         >
-          <Text style={styles.fabText}>+</Text>
+          <Text style={[styles.fabText, { color: colorScheme === "dark" ? "#000" : "#fff" }]}>+</Text>
         </Pressable>
       ) : null}
     </View>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -132,6 +139,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingBottom: 8,
+    borderBottomWidth: 1,
   },
   screenTitle: {
     fontSize: 24,
@@ -142,21 +150,21 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 16,
     paddingBottom: 8,
+    paddingTop: 12
   },
   tabButton: {
     flex: 1,
+    borderWidth: 1,
     borderRadius: 999,
     paddingVertical: 10,
     alignItems: "center",
-    backgroundColor: "#e6e6e6",
   },
   tabButtonActive: {
-    backgroundColor: "#111",
+    backgroundColor: Appearance.getColorScheme() === "light" ? "#000000":"#8a8888",
   },
   tabButtonText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#111",
   },
   tabButtonTextActive: {
     color: "#fff",
@@ -164,8 +172,8 @@ const styles = StyleSheet.create({
   list: { padding: 16, gap: 12, paddingTop: 8 },
   noteItem: { padding: 16, borderWidth: 1, borderRadius:12, gap: 8 },
   noteTitle: { fontSize: 16, fontWeight: "600" },
-  notePreview: { fontSize: 14, color: "#444" },
-  noteMeta: { fontSize: 12, color: "#666" },
+  notePreview: { fontSize: 14 },
+  noteMeta: { fontSize: 12 },
   emptyText: {
     textAlign: "center",
     paddingVertical: 32,
@@ -181,7 +189,11 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: 56, height: 56, borderRadius: 28,
     alignItems: "center", justifyContent: "center",
-    backgroundColor: "grey"
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowOffset: { width: 0, height: 8 },
+    shadowRadius: 16,
+    elevation: 8,
   },
   fabText: { fontSize: 28, lineHeight: 28, fontWeight: "700"}
-});
+})
