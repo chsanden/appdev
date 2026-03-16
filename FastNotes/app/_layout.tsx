@@ -3,8 +3,11 @@ import AuthProvider from '@/providers/auth-provider'
 import { NotesProvider } from "@/src/notes/NotesContext"
 import { AppThemeProvider, useAppTheme } from '@/src/theme/AppThemeProvider'
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native'
+import Constants from "expo-constants"
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
+import { ComponentType, PropsWithChildren, useEffect, useState } from "react"
+import { Platform } from "react-native"
 import 'react-native-reanimated'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
@@ -71,9 +74,11 @@ function ThemedRootLayout() {
     <SafeAreaProvider>
       <ThemeProvider value={navigationTheme}>
         <AuthProvider>
-          <NotesProvider>
-            <RootNavigator />
-          </NotesProvider>
+          <NotificationProviderGate>
+            <NotesProvider>
+              <RootNavigator />
+            </NotesProvider>
+          </NotificationProviderGate>
         </AuthProvider>
         <StatusBar
           style={colorScheme === "dark" ? "light" : "dark"}
@@ -82,6 +87,44 @@ function ThemedRootLayout() {
       </ThemeProvider>
     </SafeAreaProvider>
   )
+}
+
+function NotificationProviderGate({ children }: PropsWithChildren) {
+  const isAndroidExpoGo = Platform.OS === "android" && Constants.executionEnvironment === "storeClient"
+  const [provider, setProvider] = useState<ComponentType<PropsWithChildren> | null>(null)
+
+  useEffect(() => {
+    if (isAndroidExpoGo) {
+      return
+    }
+
+    let isMounted = true
+
+    const loadProvider = async () => {
+      try {
+        const module = await import("@/src/notifications/PushNotificationsProvider")
+
+        if (isMounted) {
+          setProvider(() => module.default)
+        }
+      } catch (error) {
+        console.error("Failed to load push notifications provider:", error)
+      }
+    }
+
+    void loadProvider()
+
+    return () => {
+      isMounted = false
+    }
+  }, [isAndroidExpoGo])
+
+  if (isAndroidExpoGo || !provider) {
+    return children
+  }
+
+  const PushNotificationsProvider = provider
+  return <PushNotificationsProvider>{children}</PushNotificationsProvider>
 }
 
 export default function RootLayout() {

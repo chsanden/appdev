@@ -1,23 +1,33 @@
-import 
-{ 
-    StyleSheet, Text, View, KeyboardAvoidingView, 
-    Platform, Pressable, TextInput, ScrollView
+import { useRef, useState } from "react"
+import {
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    ScrollView,
+    Text,
+    TextInput,
+    View,
 } from "react-native"
-import { router, } from "expo-router"
-import { useNotes } from "@/src/notes/NotesContext"
-import { useState, useRef } from "react"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { router } from "expo-router"
+import { BlurView } from "expo-blur"
 import { useHeaderHeight } from "@react-navigation/elements"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
+
+import NoteImagePanel from "@/components/note-image-panel"
+import UploadProgressBar from "@/components/upload-progress-bar"
+import { useNotes } from "@/src/notes/NotesContext"
+import { StagedNoteImage, validateStagedNoteImage } from "@/src/notes/image-utils"
+import { newNoteScreenStyles as styles } from "@/src/styles/app-styles"
+import { pickImageFromCamera, pickImageFromLibrary } from "@/src/notes/native-image-picker"
 import { useAppTheme } from "@/src/theme/AppThemeProvider"
 
-
-
-export default function NewNoteScreen() 
-{
+export default function NewNoteScreen() {
     const { addNote, errorMessage } = useNotes()
     const [title, setTitle] = useState("")
     const [content, setContent] = useState("")
+    const [stagedImage, setStagedImage] = useState<StagedNoteImage | null>(null)
     const [isSaving, setIsSaving] = useState(false)
+    const [uploadProgress, setUploadProgress] = useState<number | null>(null)
     const [localErrorMessage, setLocalErrorMessage] = useState<string | null>(null)
     const insets = useSafeAreaInsets()
     const headerHeight = useHeaderHeight()
@@ -25,114 +35,163 @@ export default function NewNoteScreen()
     const [contentHeight, setContentHeight] = useState(160)
     const scrollRef = useRef<ScrollView>(null)
 
-    const onSave = async () => 
-    {
-        if(!title.trim() || !content.trim()) {
+    const attachFromCamera = async () => {
+        try {
+            const image = await pickImageFromCamera()
+
+            if (image) {
+                validateStagedNoteImage(image)
+                setStagedImage(image)
+                setLocalErrorMessage(null)
+            }
+        } catch (error) {
+            setLocalErrorMessage(error instanceof Error ? error.message : "The camera could not be opened.")
+        }
+    }
+
+    const attachFromGallery = async () => {
+        try {
+            const image = await pickImageFromLibrary()
+
+            if (image) {
+                validateStagedNoteImage(image)
+                setStagedImage(image)
+                setLocalErrorMessage(null)
+            }
+        } catch (error) {
+            setLocalErrorMessage(error instanceof Error ? error.message : "The gallery could not be opened.")
+        }
+    }
+
+    const onSave = async () => {
+        if (!title.trim() || !content.trim()) {
             setLocalErrorMessage("Title and content are required.")
             return
         }
 
         setIsSaving(true)
+        setUploadProgress(null)
         setLocalErrorMessage(null)
 
-        const wasSaved = await addNote(title, content)
+        const wasSaved = await addNote(title, content, stagedImage, {
+            onImageUploadProgress: (progress) => {
+                setUploadProgress(progress.progress)
+            },
+        })
 
         setIsSaving(false)
+        setUploadProgress(null)
 
         if (wasSaved) {
-            router.back()
+            if (router.canGoBack()) {
+                router.back()
+                return
+            }
+
+            router.replace("/index")
         }
     }
 
+    const saveDisabled = isSaving
+    const imageActionsDisabled = isSaving
+    const saveButtonStyle = saveDisabled ? styles.disabledButton : styles.enabledButtonShadow
+
     return (
-      <KeyboardAvoidingView
-      style={styles.keyboardAvoider}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={headerHeight}>
-        <View style={[styles.container, { backgroundColor: palette.background }]}>
-            <ScrollView ref={scrollRef} contentContainerStyle={[styles.formContent, { paddingBottom: insets.bottom + 112 }]}
-            keyboardShouldPersistTaps="handled">
-                <TextInput value={title} onChangeText={setTitle}
-                placeholder="Give it a title..." style={[styles.titleInput, { color: palette.text, borderColor: palette.border, backgroundColor: palette.input }]}
-                placeholderTextColor={palette.mutedText}
-                returnKeyType="next"/>
+        <KeyboardAvoidingView
+            style={styles.keyboardAvoider}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            keyboardVerticalOffset={headerHeight}
+        >
+            <View style={[styles.container, { backgroundColor: palette.background }]}>
+                <ScrollView
+                    ref={scrollRef}
+                    contentContainerStyle={[styles.formContent, { paddingBottom: insets.bottom + 112 }]}
+                    keyboardShouldPersistTaps="handled"
+                >
+                    <TextInput
+                        value={title}
+                        onChangeText={setTitle}
+                        placeholder="Give it a title..."
+                        style={[
+                            styles.titleInput,
+                            { color: palette.text, borderColor: palette.border, backgroundColor: palette.input },
+                        ]}
+                        placeholderTextColor={palette.mutedText}
+                        returnKeyType="next"
+                    />
 
-                <TextInput value={content} onChangeText={setContent} placeholder="Write your note..."
-                style={[styles.contentInput, { minHeight: Math.max(200, contentHeight), color: palette.text, borderColor: palette.border, backgroundColor: palette.input }]} multiline 
-                placeholderTextColor={palette.mutedText}
-                textAlignVertical="top"
-                onContentSizeChange={(e) => {setContentHeight(e.nativeEvent.contentSize.height) 
-                    scrollRef.current?.scrollToEnd({ animated: true })
-                }}/>
+                    <TextInput
+                        value={content}
+                        onChangeText={setContent}
+                        placeholder="Write your note..."
+                        style={[
+                            styles.contentInput,
+                            {
+                                minHeight: Math.max(200, contentHeight),
+                                color: palette.text,
+                                borderColor: palette.border,
+                                backgroundColor: palette.input,
+                            },
+                        ]}
+                        multiline
+                        placeholderTextColor={palette.mutedText}
+                        textAlignVertical="top"
+                        onContentSizeChange={(e) => {
+                            setContentHeight(e.nativeEvent.contentSize.height)
+                            scrollRef.current?.scrollToEnd({ animated: true })
+                        }}
+                    />
 
-                {localErrorMessage ? (
-                    <Text style={styles.errorText}>{localErrorMessage}</Text>
-                ) : null}
+                    <NoteImagePanel
+                        canEdit
+                        isBusy={imageActionsDisabled}
+                        stagedImage={stagedImage}
+                        helperText="Images upload when you save the note. Allowed formats: PNG, JPG, WEBP. Max 15 MB after compression."
+                        palette={palette}
+                        primaryTextColor={colorScheme === "dark" ? "#000" : "#fff"}
+                        onTakePhoto={() => {
+                            void attachFromCamera()
+                        }}
+                        onChooseFromLibrary={() => {
+                            void attachFromGallery()
+                        }}
+                        onRemoveImage={() => {
+                            setStagedImage(null)
+                            setLocalErrorMessage(null)
+                        }}
+                    />
 
-                {!localErrorMessage && errorMessage ? (
-                    <Text style={styles.errorText}>{errorMessage}</Text>
-                ) : null}
+                    {uploadProgress !== null ? <UploadProgressBar progress={uploadProgress} palette={palette} /> : null}
 
-            </ScrollView>
-            <View style={[styles.actions, { bottom: insets.bottom + 16 }]}>
-                <Pressable disabled={isSaving} onPress={onSave}
-                    style={[styles.saveButton, { backgroundColor: palette.accent }]}>
-                    <Text style={[styles.saveFloatingText, { color: colorScheme === "dark" ? "#000" : "#fff" }]}>
-                        {isSaving ? "Saving..." : "Save note"}
-                    </Text>
-                </Pressable>
+                    {localErrorMessage ? (
+                        <Text style={styles.errorText}>{localErrorMessage}</Text>
+                    ) : null}
+
+                    {!localErrorMessage && errorMessage ? (
+                        <Text style={styles.errorText}>{errorMessage}</Text>
+                    ) : null}
+                </ScrollView>
+                <View style={[styles.actions, { paddingBottom: insets.bottom + 16 }]}>
+                    <BlurView
+                        intensity={22}
+                        tint={colorScheme}
+                        style={styles.actionsBlur}
+                    />
+                    <View style={[styles.actionsContent, { borderColor: palette.border }]}>
+                        <Pressable
+                            disabled={saveDisabled}
+                            onPress={() => {
+                                void onSave()
+                            }}
+                            style={[styles.saveButton, saveButtonStyle, { backgroundColor: palette.accent }]}
+                        >
+                            <Text style={[styles.saveFloatingText, { color: colorScheme === "dark" ? "#000" : "#fff" }]}>
+                                {isSaving ? "Saving..." : "Save note"}
+                            </Text>
+                        </Pressable>
+                    </View>
+                </View>
             </View>
-        </View>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
     )
 }
-
-const styles = StyleSheet.create(
-    { 
-        keyboardAvoider: { flex: 1 },
-        container: { flex: 1 },
-        formContent: { padding: 16, gap: 12 },
-        titleInput:
-        { 
-            borderWidth: 1,
-            borderRadius: 8,
-            padding: 12,
-            fontSize: 22,
-            fontWeight: "700",
-        },
-        contentInput:
-        {
-            borderWidth: 1,
-            borderRadius: 8,
-            padding: 12,
-            fontSize: 16,
-        },
-        actions: {
-            position: "absolute",
-            left: 16,
-            right: 16,
-            flexDirection: "row",
-            gap: 12,
-        },
-        saveButton: 
-        {
-            flex: 1,
-            borderRadius: 12,
-            paddingVertical: 14,
-            alignItems: "center",
-            shadowColor: "#000",
-            shadowOpacity: 0.18,
-            shadowOffset: { width: 0, height: 8 },
-            shadowRadius: 16,
-            elevation: 8,
-        },
-        saveFloatingText: 
-        {
-            fontSize: 16,
-            fontWeight: "700"
-        },
-        errorText: {
-            color: "#c62828"
-        },
-    }
-)

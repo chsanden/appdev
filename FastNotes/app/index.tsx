@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react"
-import { Appearance, FlatList, Pressable, StyleSheet, Text, View } from "react-native"
+import { FlatList, Pressable, Text, View } from "react-native"
 import { router } from "expo-router"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { Image } from "expo-image"
 import { useAuthContext } from "@/hooks/use-auth-context"
 import { useNotes } from "@/src/notes/NotesContext"
 import SignOutButton from '@/components/social-auth-buttons/sign-out-button'
 import { useAppTheme } from "@/src/theme/AppThemeProvider"
+import { homeScreenStyles as styles } from "@/src/styles/app-styles"
 
 
 type TabKey = "my-notes" | "work-notes"
@@ -109,12 +111,23 @@ export default function HomeScreen()
               })
             }
           >
-            <Text style={[styles.noteTitle, { color: palette.text }]}>{item.title}</Text>
-            <Text numberOfLines={2} style={[styles.notePreview, { color: palette.mutedText }]}>{item.content}</Text>
-            <Text style={[styles.noteMeta, { color: palette.mutedText }]}>Created by {item.creatorLabel}</Text>
-            <Text style={[styles.noteMeta, { color: palette.mutedText }]}>
-              Last changed {formatTimestamp(item.lastChangedAt)}
-            </Text>
+            <View style={styles.noteCardRow}>
+              <View style={styles.noteBody}>
+                <Text style={[styles.noteTitle, { color: palette.text }]}>{item.title}</Text>
+                <Text numberOfLines={2} style={[styles.notePreview, { color: palette.mutedText }]}>
+                  {item.content}
+                </Text>
+                <Text style={[styles.noteMeta, { color: palette.mutedText }]}>Created by {item.creatorLabel}</Text>
+                <Text style={[styles.noteMeta, { color: palette.mutedText }]}>
+                  Last changed {formatTimestamp(item.lastChangedAt)}
+                </Text>
+              </View>
+              {item.imageUrl ? (
+                <View style={styles.noteThumbnailFrame}>
+                  <Image source={{ uri: item.imageUrl }} style={styles.noteThumbnail} contentFit="contain" />
+                </View>
+              ) : null}
+            </View>
           </Pressable>
         )}
       />
@@ -130,70 +143,3 @@ export default function HomeScreen()
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  topBar: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-  },
-  screenTitle: {
-    fontSize: 24,
-    fontWeight: "700",
-  },
-  tabBar: {
-    flexDirection: "row",
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-    paddingTop: 12
-  },
-  tabButton: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingVertical: 10,
-    alignItems: "center",
-  },
-  tabButtonActive: {
-    backgroundColor: Appearance.getColorScheme() === "light" ? "#000000":"#8a8888",
-  },
-  tabButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  tabButtonTextActive: {
-    color: "#fff",
-  },
-  list: { padding: 16, gap: 12, paddingTop: 8 },
-  noteItem: { padding: 16, borderWidth: 1, borderRadius:12, gap: 8 },
-  noteTitle: { fontSize: 16, fontWeight: "600" },
-  notePreview: { fontSize: 14 },
-  noteMeta: { fontSize: 12 },
-  emptyText: {
-    textAlign: "center",
-    paddingVertical: 32,
-    color: "#666",
-  },
-  errorText: {
-    color: "#c62828",
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-  },
-  fab: 
-  {
-    position: "absolute",
-    width: 56, height: 56, borderRadius: 28,
-    alignItems: "center", justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.18,
-    shadowOffset: { width: 0, height: 8 },
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  fabText: { fontSize: 28, lineHeight: 28, fontWeight: "700"}
-})

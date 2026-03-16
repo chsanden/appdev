@@ -1,5 +1,5 @@
 import { AuthContext } from '@/hooks/use-auth-context'
-import { hasSecureRefreshToken, supabase } from '@/libs/supabase'
+import { supabase } from '@/libs/supabase'
 import { PropsWithChildren, useEffect, useState } from 'react'
 
 const buildClaims = (user?: { id: string; email?: string | null } | null) =>
@@ -24,10 +24,6 @@ export default function AuthProvider({ children }: PropsWithChildren) {
 
       if (error) {
         console.error('Error hydrating session:', error)
-      }
-
-      if (!session && await hasSecureRefreshToken()) {
-        console.warn('Found an encrypted Supabase refresh token backup, but fallback session recovery is not implemented.')
       }
 
       setClaims(buildClaims(session?.user))

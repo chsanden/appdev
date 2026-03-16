@@ -1,10 +1,27 @@
 import { supabase } from '@/libs/supabase'
 import { router } from 'expo-router'
+import Constants from "expo-constants"
 import React from 'react'
-import { Pressable, StyleSheet, Text } from 'react-native'
+import { Platform, Pressable, Text } from 'react-native'
 import { useAppTheme } from '@/src/theme/AppThemeProvider'
+import { signOutButtonStyles as styles } from '@/src/styles/app-styles'
 
 async function onSignOutButtonPress() {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const isAndroidExpoGo = Platform.OS === "android" && Constants.executionEnvironment === "storeClient"
+
+  if (user?.id && !isAndroidExpoGo) {
+    const { unregisterPushNotifications } = await import('@/src/notifications/push-notifications')
+    const removed = await unregisterPushNotifications(user.id)
+
+    if (!removed) {
+      console.error('Failed to unregister push notifications before sign out.')
+    }
+  }
+
   const { error } = await supabase.auth.signOut()
 
   if (error) {
@@ -27,16 +44,3 @@ export default function SignOutButton() {
     </Pressable>
   )
 }
-
-const styles = StyleSheet.create({
-  button: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  text: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-})
