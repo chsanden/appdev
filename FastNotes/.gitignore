@@ -30,7 +30,6 @@ yarn-error.*
 .DS_Store
 *.pem
 
-
 # typescript
 *.tsbuildinfo
 
@@ -41,6 +40,7 @@ yarn-error.*
 # Supabase
 .branches
 .temp
+config.toml
 
 # dotenvx
 .env.keys
