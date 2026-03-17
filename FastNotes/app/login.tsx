@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Link, Stack } from 'expo-router'
-import { Appearance, Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Pressable, Text, TextInput, View } from 'react-native'
 import { supabase } from '@/libs/supabase'
 import { useAppTheme } from '@/src/theme/AppThemeProvider'
+import { loginScreenStyles as styles } from '@/src/styles/app-styles'
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('')
@@ -87,56 +88,3 @@ export default function LoginScreen() {
     </>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 24,
-    gap: 12,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-  },
-  errorText: {
-    color: '#c62828',
-    fontSize: 14,
-  },
-  loginButton: {
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    backgroundColor: Appearance.getColorScheme() === "light" ? '#000000':'#696969',
-    marginTop: 8,
-  },
-  loginButtonPressed: {
-    opacity: 0.85,
-  },
-  loginButtonDisabled: {
-    opacity: 0.6,
-  },
-  loginButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  link: {
-    alignSelf: 'center',
-    marginTop: 8,
-  },
-  linkText: {
-    color: '#0b57d0',
-    fontSize: 16,
-  },
-})

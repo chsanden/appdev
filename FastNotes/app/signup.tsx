@@ -1,8 +1,9 @@
 import { supabase } from "@/libs/supabase"
 import { Link, Stack } from "expo-router"
 import { useState } from "react"
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native'
+import { Pressable, Text, TextInput, View } from 'react-native'
 import { useAppTheme } from "@/src/theme/AppThemeProvider"
+import { signupScreenStyles as styles } from "@/src/styles/app-styles"
 
 export default function SignupScreen(){
     const [email, setEmail] = useState('')
@@ -115,61 +116,3 @@ export default function SignupScreen(){
     </>
     )
 }
-
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 24,
-    gap: 12,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-  },
-  errorText: {
-    color: '#c62828',
-    fontSize: 14,
-  },
-  successText: {
-    color: '#2e7d32',
-    fontSize: 14,
-  },
-  actionButton: {
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    backgroundColor: '#111',
-    marginTop: 8,
-  },
-  actionButtonPressed: {
-    opacity: 0.85,
-  },
-  actionButtonDisabled: {
-    opacity: 0.6,
-  },
-  actionButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  link: {
-    alignSelf: 'center',
-    marginTop: 8,
-  },
-  linkText: {
-    color: '#0b57d0',
-    fontSize: 16,
-  },
-})

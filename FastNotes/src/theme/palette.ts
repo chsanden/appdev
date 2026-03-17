@@ -14,8 +14,8 @@ const lightPalette = {
 }
 
 const darkPalette = {
-    background: "#000000",
-    surface: "#0b0b0b",
+    background: "#191919",
+    surface: "#343232",
     elevated: "#111111",
     text: "#ffffff",
     mutedText: "#b8b8b8",
