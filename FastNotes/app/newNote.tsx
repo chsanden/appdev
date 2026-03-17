@@ -1,3 +1,6 @@
+import { useHeaderHeight } from "@react-navigation/elements"
+import { BlurView } from "expo-blur"
+import { router } from "expo-router"
 import { useRef, useState } from "react"
 import {
     KeyboardAvoidingView,
@@ -8,17 +11,14 @@ import {
     TextInput,
     View,
 } from "react-native"
-import { router } from "expo-router"
-import { BlurView } from "expo-blur"
-import { useHeaderHeight } from "@react-navigation/elements"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 import NoteImagePanel from "@/components/note-image-panel"
 import UploadProgressBar from "@/components/upload-progress-bar"
 import { useNotes } from "@/src/notes/NotesContext"
 import { StagedNoteImage, validateStagedNoteImage } from "@/src/notes/image-utils"
-import { newNoteScreenStyles as styles } from "@/src/styles/app-styles"
 import { pickImageFromCamera, pickImageFromLibrary } from "@/src/notes/native-image-picker"
+import { newNoteScreenStyles as styles } from "@/src/styles/app-styles"
 import { useAppTheme } from "@/src/theme/AppThemeProvider"
 
 export default function NewNoteScreen() {
