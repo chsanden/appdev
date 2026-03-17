@@ -10,12 +10,37 @@ const buildClaims = (user?: { id: string; email?: string | null } | null) =>
       }
     : null
 
+const isInvalidRefreshTokenError = (error: { message?: string; status?: number } | null) => {
+  if (!error) {
+    return false
+  }
+
+  const message = error.message?.toLowerCase() ?? ''
+
+  return error.status === 401 && (
+    message.includes('invalid refresh token') ||
+    message.includes('refresh token not found')
+  )
+}
+
 export default function AuthProvider({ children }: PropsWithChildren) {
   const [claims, setClaims] = useState<Record<string, any> | undefined | null>()
   const [profile, setProfile] = useState<any>()
   const [isLoading, setIsLoading] = useState<boolean>(true)
 
   useEffect(() => {
+    const clearInvalidSession = async () => {
+      const { error } = await supabase.auth.signOut({ scope: 'local' })
+
+      if (error) {
+        console.error('Error clearing invalid local session:', error)
+      }
+
+      setClaims(null)
+      setProfile(null)
+      setIsLoading(false)
+    }
+
     const hydrateSession = async () => {
       const {
         data: { session },
@@ -23,6 +48,12 @@ export default function AuthProvider({ children }: PropsWithChildren) {
       } = await supabase.auth.getSession()
 
       if (error) {
+        if (isInvalidRefreshTokenError(error)) {
+          console.warn('Clearing expired auth session:', error.message)
+          await clearInvalidSession()
+          return
+        }
+
         console.error('Error hydrating session:', error)
       }
 

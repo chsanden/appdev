@@ -72,10 +72,23 @@ export const themedTextStyles = StyleSheet.create({
 })
 
 export const loginScreenStyles = StyleSheet.create({
-    container: {
+    keyboardAvoider: {
+        flex: 1,
+    },
+    scrollView: {
+        flex: 1,
+    },
+    scrollContent: {
+        flexGrow: 1,
+        justifyContent: "center",
+        paddingHorizontal: 24,
+        paddingVertical: 32,
+    },
+    dismissArea: {
         flex: 1,
         justifyContent: "center",
-        padding: 24,
+    },
+    form: {
         gap: 12,
     },
     title: {
@@ -125,11 +138,32 @@ export const loginScreenStyles = StyleSheet.create({
 })
 
 export const signupScreenStyles = StyleSheet.create({
-    container: {
+    keyboardAvoider: {
+        flex: 1,
+    },
+    scrollView: {
+        flex: 1,
+    },
+    scrollContent: {
+        flexGrow: 1,
+        justifyContent: "center",
+        paddingHorizontal: 24,
+        paddingVertical: 32,
+    },
+    dismissArea: {
         flex: 1,
         justifyContent: "center",
-        padding: 24,
+    },
+    form: {
         gap: 12,
+    },
+    backButton: {
+        alignSelf: "flex-start",
+        paddingVertical: 8,
+    },
+    backButtonText: {
+        fontSize: 16,
+        fontWeight: "600",
     },
     title: {
         fontSize: 28,

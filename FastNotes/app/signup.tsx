@@ -1,7 +1,7 @@
 import { supabase } from "@/libs/supabase"
-import { Link, Stack } from "expo-router"
+import { Link, Stack, router } from "expo-router"
 import { useState } from "react"
-import { Pressable, Text, TextInput, View } from 'react-native'
+import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 import { useAppTheme } from "@/src/theme/AppThemeProvider"
 import { signupScreenStyles as styles } from "@/src/styles/app-styles"
 
@@ -59,60 +59,80 @@ export default function SignupScreen(){
     return (
     <>
     <Stack.Screen options={{title: "Signup"}}/>
-    <View style={[styles.container, { backgroundColor: palette.background }]}>
-        <Text style={[styles.title, { color: palette.text }]}>Sign up</Text>
-
-        <Text style={[styles.label, { color: palette.text }]}>E-mail</Text>
-        <TextInput
-            autoCapitalize="none"
-            autoComplete="email"
-            keyboardType="email-address"
-            onChangeText={setEmail}
-            placeholder="name@email.com"
-            placeholderTextColor={palette.mutedText}
-            style={[styles.input, { color: palette.text, backgroundColor: palette.input, borderColor: palette.border }]}
-            value={email}
-        />
-
-        <Text style={[styles.label, { color: palette.text }]} >Password</Text>
-        <TextInput 
-            autoCapitalize="none"
-            autoComplete="password"
-            onChangeText={setPassword}
-            placeholder="Password"
-            placeholderTextColor={palette.mutedText}
-            secureTextEntry
-            style={[styles.input, { color: palette.text, backgroundColor: palette.input, borderColor: palette.border }]}
-            value={password}
-        />
-
-        {errorMessage ? (
-          <Text style={styles.errorText}>{errorMessage}</Text>
-        ) : null}
-
-        {successMessage ? (
-          <Text style={styles.successText}>{successMessage}</Text>
-        ) : null}
-
-        <Pressable
-          disabled={isSubmitting}
-          onPress={onSignup}
-          style={({ pressed }) => [
-            styles.actionButton,
-            pressed && !isSubmitting ? styles.actionButtonPressed : null,
-            isSubmitting ? styles.actionButtonDisabled : null,
-          ]}
+    <KeyboardAvoidingView
+        style={[styles.keyboardAvoider, { backgroundColor: palette.background }]}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+        <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
         >
-          <Text style={styles.actionButtonText}>
-            {isSubmitting ? 'Creating account...' : 'Sign up'}
-          </Text>
-        </Pressable>
+            <Pressable style={styles.dismissArea} onPress={Keyboard.dismiss}>
+                <View style={styles.form}>
+                    <Pressable
+                        onPress={() => router.replace("/login")}
+                        style={styles.backButton}
+                    >
+                        <Text style={[styles.backButtonText, { color: palette.text }]}>Back to login</Text>
+                    </Pressable>
 
-        <Link href="/login" style={styles.link}>
-          <Text style={[styles.linkText, { color: colorScheme === "dark" ? "#8ab4ff" : "#0b57d0" }]}>Already have an account? Log in</Text>
-        </Link>
+                    <Text style={[styles.title, { color: palette.text }]}>Sign up</Text>
 
-    </View>
+                    <Text style={[styles.label, { color: palette.text }]}>E-mail</Text>
+                    <TextInput
+                        autoCapitalize="none"
+                        autoComplete="email"
+                        keyboardType="email-address"
+                        onChangeText={setEmail}
+                        placeholder="name@email.com"
+                        placeholderTextColor={palette.mutedText}
+                        style={[styles.input, { color: palette.text, backgroundColor: palette.input, borderColor: palette.border }]}
+                        value={email}
+                    />
+
+                    <Text style={[styles.label, { color: palette.text }]} >Password</Text>
+                    <TextInput 
+                        autoCapitalize="none"
+                        autoComplete="password"
+                        onChangeText={setPassword}
+                        placeholder="Password"
+                        placeholderTextColor={palette.mutedText}
+                        secureTextEntry
+                        style={[styles.input, { color: palette.text, backgroundColor: palette.input, borderColor: palette.border }]}
+                        value={password}
+                    />
+
+                    {errorMessage ? (
+                      <Text style={styles.errorText}>{errorMessage}</Text>
+                    ) : null}
+
+                    {successMessage ? (
+                      <Text style={styles.successText}>{successMessage}</Text>
+                    ) : null}
+
+                    <Pressable
+                      disabled={isSubmitting}
+                      onPress={onSignup}
+                      style={({ pressed }) => [
+                        styles.actionButton,
+                        pressed && !isSubmitting ? styles.actionButtonPressed : null,
+                        isSubmitting ? styles.actionButtonDisabled : null,
+                      ]}
+                    >
+                      <Text style={styles.actionButtonText}>
+                        {isSubmitting ? 'Creating account...' : 'Sign up'}
+                      </Text>
+                    </Pressable>
+
+                    <Link href="/login" style={styles.link}>
+                      <Text style={[styles.linkText, { color: colorScheme === "dark" ? "#8ab4ff" : "#0b57d0" }]}>Already have an account? Log in</Text>
+                    </Link>
+                </View>
+            </Pressable>
+        </ScrollView>
+    </KeyboardAvoidingView>
     </>
     )
 }

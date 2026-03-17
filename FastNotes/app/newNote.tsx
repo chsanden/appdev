@@ -88,7 +88,7 @@ export default function NewNoteScreen() {
                 return
             }
 
-            router.replace("/index")
+            router.replace("/")
         }
     }
 
