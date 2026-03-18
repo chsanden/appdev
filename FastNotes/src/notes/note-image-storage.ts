@@ -27,6 +27,10 @@ function normalizeUploadFailureMessage(error: unknown) {
         }
 
         if (error.message.trim()) {
+            if (error.message.startsWith("Image upload failed.")) {
+                return error.message
+            }
+
             return `Image upload failed. ${error.message}`
         }
     }

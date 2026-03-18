@@ -9,8 +9,8 @@ const extra = (Constants.expoConfig?.extra ?? Constants.expoConfig?.extra) as {
   supabaseKey?: string
 }
 
-const supabaseUrl = extra?.supabaseUrl
-const supabaseAnonKey = extra?.supabaseKey
+export const supabaseUrl = extra?.supabaseUrl
+export const supabaseAnonKey = extra?.supabaseKey
 
 if(!supabaseUrl || !supabaseAnonKey){
   throw new Error("Cannot read env variables")
