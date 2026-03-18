@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import {
     Alert,
+    ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
     Pressable,
@@ -28,7 +29,7 @@ export default function DetailScreen() {
         id?: string
     }>()
     const { claims } = useAuthContext()
-    const { deleteNote, errorMessage, notes, updateNote } = useNotes()
+    const { deleteNote, errorMessage, fetchNoteById, notes, updateNote } = useNotes()
     const note = notes.find((entry) => entry.id === id)
     const canEdit = note?.createdBy === claims?.sub
     const [title, setTitle] = useState(note?.title ?? "")
@@ -40,6 +41,7 @@ export default function DetailScreen() {
     const [uploadProgress, setUploadProgress] = useState<number | null>(null)
     const [localErrorMessage, setLocalErrorMessage] = useState<string | null>(null)
     const [statusMessage, setStatusMessage] = useState<string | null>(null)
+    const [isLoadingNote, setIsLoadingNote] = useState(false)
     const insets = useSafeAreaInsets()
     const headerHeight = useHeaderHeight()
     const { colorScheme, palette } = useAppTheme()
@@ -60,6 +62,27 @@ export default function DetailScreen() {
         setStagedImage(null)
         setImageChange({ type: "keep" })
     }, [note?.content, note?.id, note?.title])
+
+    useEffect(() => {
+        if (!id || note) {
+            setIsLoadingNote(false)
+            return
+        }
+
+        let isMounted = true
+
+        setIsLoadingNote(true)
+
+        void fetchNoteById(id).finally(() => {
+            if (isMounted) {
+                setIsLoadingNote(false)
+            }
+        })
+
+        return () => {
+            isMounted = false
+        }
+    }, [fetchNoteById, id, note])
 
     const attachFromCamera = async () => {
         try {
@@ -169,6 +192,18 @@ export default function DetailScreen() {
         if (wasDeleted) {
             router.replace("/")
         }
+    }
+
+    if (isLoadingNote && !note) {
+        return (
+            <View
+                testID="note-detail-loader"
+                style={[styles.container, { backgroundColor: palette.background, padding: 16, justifyContent: "center" }]}
+            >
+                <ActivityIndicator size="large" color={palette.accent} />
+                <Text style={[styles.content, { color: palette.mutedText, marginTop: 12 }]}>Loading note...</Text>
+            </View>
+        )
     }
 
     if (!note) {

@@ -10,6 +10,14 @@ type NoteRecord = {
   title: string
 }
 
+type ProfileEmailRow = {
+  email: string | null
+}
+
+type PushTokenRow = {
+  push_token: string | null
+}
+
 type DatabaseWebhookPayload = {
   type: "INSERT" | "UPDATE" | "DELETE"
   table: string
@@ -49,15 +57,17 @@ function chunkMessages<T>(items: T[], size: number) {
   return chunks
 }
 
-async function loadCreatorEmail(userId: string) {
+async function loadCreatorEmail(userId: string): Promise<string> {
   const { data: profile } = await supabase
     .from("profiles")
     .select("email")
     .eq("id", userId)
     .maybeSingle()
 
-  if (profile?.email) {
-    return profile.email as string
+  const typedProfile = profile as ProfileEmailRow | null
+
+  if (typedProfile?.email) {
+    return typedProfile.email
   }
 
   const { data, error } = await supabase.auth.admin.getUserById(userId)
@@ -70,7 +80,7 @@ async function loadCreatorEmail(userId: string) {
   return data.user.email ?? "unknown user"
 }
 
-async function loadRecipientTokens(userId: string) {
+async function loadRecipientTokens(userId: string): Promise<string[]> {
   const { data, error } = await supabase
     .from("user_push_tokens")
     .select("push_token")
@@ -81,7 +91,9 @@ async function loadRecipientTokens(userId: string) {
     throw new Error(error.message)
   }
 
-  return Array.from(new Set((data ?? []).map((row) => row.push_token as string).filter(Boolean)))
+  const rows = (data ?? []) as PushTokenRow[]
+
+  return Array.from(new Set(rows.map((row) => row.push_token).filter((token): token is string => Boolean(token))))
 }
 
 async function sendExpoPushNotifications(messages: ExpoPushMessage[]) {
@@ -108,7 +120,7 @@ async function sendExpoPushNotifications(messages: ExpoPushMessage[]) {
   }
 }
 
-Deno.serve(async (request) => {
+Deno.serve(async (request: Request) => {
   if (request.method !== "POST") {
     return jsonResponse(405, { error: "Method not allowed" })
   }
@@ -141,7 +153,7 @@ Deno.serve(async (request) => {
     }
 
     const body = `New note: "${note.title}" by ${creatorEmail}`
-    const messages: ExpoPushMessage[] = recipientTokens.map((token) => ({
+    const messages: ExpoPushMessage[] = recipientTokens.map((token: string) => ({
       to: token,
       title: "FastNotes",
       body,

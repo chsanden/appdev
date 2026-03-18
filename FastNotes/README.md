@@ -26,4 +26,15 @@
       **or**
       - Run the app in an emulator from the Expo developer tools
 
+#Running tests
+
+   Run the Jest test suite from the project root:
+   ```bash
+   npm test
+   ```
+
+   Run a single test file:
+   ```bash
+   npx jest __tests__/detail-screen.test.tsx
+   ```
 
