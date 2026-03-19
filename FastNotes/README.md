@@ -1,6 +1,8 @@
+GitHub repo: https://github.com/chsanden/appdev/tree/main/FastNotes
+
 # FastNotes
 
-This project is an Expo React Native note-taking app built for a CS assignment submission. It supports:
+This project is an Expo React Native note-taking app built for a SWE assignment submission. It supports:
 
 - Email/password authentication with Supabase Auth
 - Creating, viewing, editing, and deleting notes
