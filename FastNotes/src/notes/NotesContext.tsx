@@ -1,9 +1,13 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from "react"
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"
 
 import { useAuthContext } from "@/hooks/use-auth-context"
 import { supabase } from "@/libs/supabase"
 import { deleteNoteImage, NoteImageUploadProgress, uploadNoteImage } from "@/src/notes/note-image-storage"
 import { StagedNoteImage } from "@/src/notes/image-utils"
+
+const NOTES_PAGE_SIZE = 5
+
+export type NoteListKey = "my-notes" | "work-notes"
 
 type NoteRow = {
     id: number
@@ -47,8 +51,13 @@ export type NoteImageChange =
 type NotesContextValue = {
     notes: Note[]
     isLoading: boolean
+    isLoadingMoreMyNotes: boolean
+    isLoadingMoreWorkNotes: boolean
     errorMessage: string | null
     refreshNotes: () => Promise<void>
+    loadMoreNotes: (listKey: NoteListKey) => Promise<void>
+    hasMoreMyNotes: boolean
+    hasMoreWorkNotes: boolean
     fetchNoteById: (noteId: string) => Promise<Note | null>
     addNote: (
         title: string,
@@ -83,9 +92,18 @@ function normalizeImageSizeBytes(value: number | string | null | undefined) {
 
 export function NotesProvider({ children }: { children: React.ReactNode }) {
     const { claims, isLoggedIn, profile } = useAuthContext()
-    const [notes, setNotes] = useState<Note[]>([])
+    const [pagedNotes, setPagedNotes] = useState<Note[]>([])
+    const [fetchedNotes, setFetchedNotes] = useState<Note[]>([])
     const [isLoading, setIsLoading] = useState(false)
+    const [isLoadingMoreMyNotes, setIsLoadingMoreMyNotes] = useState(false)
+    const [isLoadingMoreWorkNotes, setIsLoadingMoreWorkNotes] = useState(false)
+    const [myNotesPage, setMyNotesPage] = useState(0)
+    const [workNotesPage, setWorkNotesPage] = useState(0)
+    const [hasMoreMyNotes, setHasMoreMyNotes] = useState(true)
+    const [hasMoreWorkNotes, setHasMoreWorkNotes] = useState(true)
     const [errorMessage, setErrorMessage] = useState<string | null>(null)
+    const myNotesPageRef = useRef(0)
+    const workNotesPageRef = useRef(0)
 
     const userId = claims?.sub as string | undefined
     const creatorLabel =
@@ -138,9 +156,72 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
         imageSizeBytes: normalizeImageSizeBytes(row.image_size_bytes),
     }), [creatorLabel, userId])
 
-    const loadNotes = useCallback(async () => {
+    const mergeNotes = useCallback((existingNotes: Note[], incomingNotes: Note[]) => {
+        const notesById = new Map<string, Note>()
+
+        for (const note of existingNotes) {
+            notesById.set(note.id, note)
+        }
+
+        for (const note of incomingNotes) {
+            notesById.set(note.id, note)
+        }
+
+        return Array.from(notesById.values()).sort((left, right) => {
+            const leftTime = new Date(left.lastChangedAt).getTime()
+            const rightTime = new Date(right.lastChangedAt).getTime()
+
+            return rightTime - leftTime
+        })
+    }, [])
+
+    const notes = useMemo(() => mergeNotes(pagedNotes, fetchedNotes), [fetchedNotes, mergeNotes, pagedNotes])
+
+    const fetchNotesPage = useCallback(async (listKey: NoteListKey, page: number, pageSize = NOTES_PAGE_SIZE) => {
+        if (!userId) {
+            return []
+        }
+
+        const rangeStart = page * NOTES_PAGE_SIZE
+        const rangeEnd = rangeStart + pageSize - 1
+
+        let query = supabase
+            .from("Notes")
+            .select(
+                "id, created_by, title, content, created_at, updated_at, image_url, image_path, image_mime_type, image_size_bytes"
+            )
+            .order("updated_at", { ascending: false, nullsFirst: false })
+            .order("created_at", { ascending: false })
+
+        query =
+            listKey === "my-notes"
+                ? query.eq("created_by", userId)
+                : query.neq("created_by", userId)
+
+        const { data, error } = await query.range(rangeStart, rangeEnd)
+
+        if (error) {
+            throw new Error(error.message)
+        }
+
+        const rows = (data ?? []) as NoteRow[]
+        const labels = await buildCreatorLabels(rows)
+
+        return rows.map((row) => mapNoteRow(row, labels))
+    }, [buildCreatorLabels, mapNoteRow, userId])
+
+    const loadNotes = useCallback(async (preserveLoadedPages = false) => {
         if (!isLoggedIn) {
-            setNotes([])
+            setPagedNotes([])
+            setFetchedNotes([])
+            setIsLoadingMoreMyNotes(false)
+            setIsLoadingMoreWorkNotes(false)
+            setMyNotesPage(0)
+            setWorkNotesPage(0)
+            myNotesPageRef.current = 0
+            workNotesPageRef.current = 0
+            setHasMoreMyNotes(true)
+            setHasMoreWorkNotes(true)
             setErrorMessage(null)
             setIsLoading(false)
             return
@@ -149,33 +230,97 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(true)
         setErrorMessage(null)
 
-        const { data, error } = await supabase
-            .from("Notes")
-            .select(
-                "id, created_by, title, content, created_at, updated_at, image_url, image_path, image_mime_type, image_size_bytes"
-            )
-            .order("updated_at", { ascending: false, nullsFirst: false })
-            .order("created_at", { ascending: false })
+        try {
+            const myPageCount = preserveLoadedPages ? Math.max(1, myNotesPageRef.current) : 1
+            const workPageCount = preserveLoadedPages ? Math.max(1, workNotesPageRef.current) : 1
 
-        if (error) {
-            setErrorMessage(error.message)
-            setNotes([])
+            const [myNotes, workNotes] = await Promise.all([
+                fetchNotesPage("my-notes", 0, myPageCount * NOTES_PAGE_SIZE),
+                fetchNotesPage("work-notes", 0, workPageCount * NOTES_PAGE_SIZE),
+            ])
+
+            setPagedNotes(mergeNotes(myNotes, workNotes))
+            setMyNotesPage(myPageCount)
+            setWorkNotesPage(workPageCount)
+            myNotesPageRef.current = myPageCount
+            workNotesPageRef.current = workPageCount
+            setHasMoreMyNotes(myNotes.length === myPageCount * NOTES_PAGE_SIZE)
+            setHasMoreWorkNotes(workNotes.length === workPageCount * NOTES_PAGE_SIZE)
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : "Failed to load notes.")
+            setPagedNotes([])
+        } finally {
             setIsLoading(false)
+        }
+    }, [fetchNotesPage, isLoggedIn, mergeNotes])
+
+    const refreshNotes = async () => {
+        await loadNotes(true)
+    }
+
+    const loadMoreNotes = useCallback(async (listKey: NoteListKey) => {
+        if (!isLoggedIn || !userId) {
             return
         }
 
-        const rows = (data ?? []) as NoteRow[]
-        const labels = await buildCreatorLabels(rows)
+        const isMyNotes = listKey === "my-notes"
+        const nextPage = isMyNotes ? myNotesPage : workNotesPage
+        const hasMoreNotes = isMyNotes ? hasMoreMyNotes : hasMoreWorkNotes
+        const isAlreadyLoading = isMyNotes ? isLoadingMoreMyNotes : isLoadingMoreWorkNotes
 
-        setNotes(
-            rows.map((row) => mapNoteRow(row, labels))
-        )
-        setIsLoading(false)
-    }, [buildCreatorLabels, isLoggedIn, mapNoteRow])
+        if (!hasMoreNotes || isAlreadyLoading) {
+            return
+        }
 
-    const refreshNotes = async () => {
-        await loadNotes()
-    }
+        setErrorMessage(null)
+
+        if (isMyNotes) {
+            setIsLoadingMoreMyNotes(true)
+        } else {
+            setIsLoadingMoreWorkNotes(true)
+        }
+
+        try {
+            const nextNotes = await fetchNotesPage(listKey, nextPage)
+
+            setPagedNotes((prev) => mergeNotes(prev, nextNotes))
+
+            if (isMyNotes) {
+                setMyNotesPage((prev) => {
+                    const nextValue = prev + 1
+                    myNotesPageRef.current = nextValue
+                    return nextValue
+                })
+                setHasMoreMyNotes(nextNotes.length === NOTES_PAGE_SIZE)
+            } else {
+                setWorkNotesPage((prev) => {
+                    const nextValue = prev + 1
+                    workNotesPageRef.current = nextValue
+                    return nextValue
+                })
+                setHasMoreWorkNotes(nextNotes.length === NOTES_PAGE_SIZE)
+            }
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : "Failed to load more notes.")
+        } finally {
+            if (isMyNotes) {
+                setIsLoadingMoreMyNotes(false)
+            } else {
+                setIsLoadingMoreWorkNotes(false)
+            }
+        }
+    }, [
+        fetchNotesPage,
+        hasMoreMyNotes,
+        hasMoreWorkNotes,
+        isLoadingMoreMyNotes,
+        isLoadingMoreWorkNotes,
+        isLoggedIn,
+        mergeNotes,
+        myNotesPage,
+        userId,
+        workNotesPage,
+    ])
 
     const fetchNoteById = useCallback(async (noteId: string) => {
         if (!isLoggedIn || !noteId) {
@@ -205,17 +350,15 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
         const labels = await buildCreatorLabels([row])
         const fetchedNote = mapNoteRow(row, labels)
 
-        setNotes((prev) => {
-            const nextNotes = prev.filter((existingNote) => existingNote.id !== fetchedNote.id)
-            return [fetchedNote, ...nextNotes]
-        })
+        setFetchedNotes((prev) => mergeNotes(prev, [fetchedNote]))
 
         return fetchedNote
     }, [buildCreatorLabels, isLoggedIn, mapNoteRow])
 
     useEffect(() => {
         if (!isLoggedIn || !userId) {
-            setNotes([])
+            setPagedNotes([])
+            setFetchedNotes([])
             setErrorMessage(null)
             setIsLoading(false)
             return
@@ -230,7 +373,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
         }
 
         const intervalId = setInterval(() => {
-            void loadNotes()
+            void loadNotes(true)
         }, 30000)
 
         return () => {
@@ -400,7 +543,23 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
                 }
             }
 
-            setNotes((prev) =>
+            setPagedNotes((prev) =>
+                prev.map((note) =>
+                    note.id === noteId
+                        ? {
+                            ...note,
+                            title: data.title ?? trimmedTitle,
+                            content: data.content ?? trimmedContent,
+                            lastChangedAt: data.updated_at ?? updates.updated_at ?? new Date().toISOString(),
+                            imageUrl: data.image_url ?? null,
+                            imagePath: data.image_path ?? null,
+                            imageMimeType: data.image_mime_type ?? null,
+                            imageSizeBytes: normalizeImageSizeBytes(data.image_size_bytes),
+                        }
+                        : note
+                )
+            )
+            setFetchedNotes((prev) =>
                 prev.map((note) =>
                     note.id === noteId
                         ? {
@@ -461,7 +620,8 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
             }
         }
 
-        setNotes((prev) => prev.filter((note) => note.id !== noteId))
+        setPagedNotes((prev) => prev.filter((note) => note.id !== noteId))
+        setFetchedNotes((prev) => prev.filter((note) => note.id !== noteId))
         return true
     }
 
@@ -470,8 +630,13 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
             value={{
                 notes,
                 isLoading,
+                isLoadingMoreMyNotes,
+                isLoadingMoreWorkNotes,
                 errorMessage,
                 refreshNotes,
+                loadMoreNotes,
+                hasMoreMyNotes,
+                hasMoreWorkNotes,
                 fetchNoteById,
                 addNote,
                 updateNote,

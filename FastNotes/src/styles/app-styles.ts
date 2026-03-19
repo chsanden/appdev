@@ -326,6 +326,77 @@ export const homeScreenStyles = StyleSheet.create({
         elevation: 8,
     },
     fabText: { fontSize: 28, lineHeight: 28, fontWeight: "700" },
+    loadMoreHint: {
+        position: "absolute",
+        left: 16,
+        right: 16,
+        alignItems: "center",
+    },
+    loadMoreHintCard: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 12,
+        width: "100%",
+        borderWidth: 1,
+        borderRadius: 20,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        shadowColor: "#000",
+        shadowOpacity: 0.12,
+        shadowOffset: { width: 0, height: 6 },
+        shadowRadius: 12,
+        elevation: 6,
+    },
+    loadMoreHintCardCompact: {
+        width: undefined,
+        minWidth: 0,
+        maxWidth: 220,
+        justifyContent: "center",
+        alignSelf: "center",
+    },
+    loadMoreHintIconCard: {
+        width: 64,
+        minWidth: 64,
+        maxWidth: 64,
+        justifyContent: "center",
+        alignSelf: "center",
+        paddingHorizontal: 12,
+        paddingVertical: 12,
+    },
+    loadMoreHintArrowOnly: {
+        alignItems: "center",
+        justifyContent: "flex-end",
+        alignSelf: "center",
+    },
+    loadMoreHintTextBlock: {
+        flex: 1,
+        gap: 4,
+    },
+    loadMoreHintTitle: {
+        fontSize: 14,
+        fontWeight: "700",
+    },
+    loadMoreHintSubtitle: {
+        fontSize: 12,
+        lineHeight: 16,
+    },
+    loadMoreHintGlyphColumn: {
+        alignItems: "center",
+        justifyContent: "flex-end",
+        width: 30,
+    },
+    loadMoreHintStem: {
+        width: 2,
+        borderRadius: 999,
+        marginBottom: 4,
+    },
+    loadMoreHintGlyph: {
+        width: 30,
+        height: 30,
+        alignItems: "center",
+        justifyContent: "center",
+    },
 })
 
 export const noteImagePanelStyles = StyleSheet.create({
