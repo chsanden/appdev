@@ -33,8 +33,10 @@
    npm test
    ```
 
-   Run a single test file:
+   Run each test file one by one:
    ```bash
    npx jest __tests__/detail-screen.test.tsx
+   npx jest __tests__/auth-guard.test.tsx
+   npx jest __tests__/new-note.test.tsx
    ```
 
