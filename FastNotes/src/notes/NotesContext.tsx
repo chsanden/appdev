@@ -49,6 +49,7 @@ type NotesContextValue = {
     isLoading: boolean
     errorMessage: string | null
     refreshNotes: () => Promise<void>
+    fetchNoteById: (noteId: string) => Promise<Note | null>
     addNote: (
         title: string,
         content: string,
@@ -94,7 +95,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
         userId ||
         "Unknown user"
 
-    const buildCreatorLabels = async (rows: NoteRow[]) => {
+    const buildCreatorLabels = useCallback(async (rows: NoteRow[]) => {
         const creatorIds = Array.from(new Set(rows.map((row) => row.created_by)))
 
         if (creatorIds.length === 0) {
@@ -119,7 +120,23 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
 
             return acc
         }, {})
-    }
+    }, [])
+
+    const mapNoteRow = useCallback((row: NoteRow, labels: Record<string, string>) => ({
+        id: String(row.id),
+        createdBy: row.created_by,
+        createdAt: row.created_at,
+        lastChangedAt: row.updated_at || row.created_at,
+        title: row.title,
+        content: row.content,
+        creatorLabel:
+            labels[row.created_by] ||
+            (row.created_by === userId ? creatorLabel : "Unknown user"),
+        imageUrl: row.image_url ?? null,
+        imagePath: row.image_path ?? null,
+        imageMimeType: row.image_mime_type ?? null,
+        imageSizeBytes: normalizeImageSizeBytes(row.image_size_bytes),
+    }), [creatorLabel, userId])
 
     const loadNotes = useCallback(async () => {
         if (!isLoggedIn) {
@@ -151,28 +168,50 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
         const labels = await buildCreatorLabels(rows)
 
         setNotes(
-            rows.map((row) => ({
-                id: String(row.id),
-                createdBy: row.created_by,
-                createdAt: row.created_at,
-                lastChangedAt: row.updated_at || row.created_at,
-                title: row.title,
-                content: row.content,
-                creatorLabel:
-                    labels[row.created_by] ||
-                    (row.created_by === userId ? creatorLabel : "Unknown user"),
-                imageUrl: row.image_url ?? null,
-                imagePath: row.image_path ?? null,
-                imageMimeType: row.image_mime_type ?? null,
-                imageSizeBytes: normalizeImageSizeBytes(row.image_size_bytes),
-            }))
+            rows.map((row) => mapNoteRow(row, labels))
         )
         setIsLoading(false)
-    }, [creatorLabel, isLoggedIn, userId])
+    }, [buildCreatorLabels, isLoggedIn, mapNoteRow])
 
     const refreshNotes = async () => {
         await loadNotes()
     }
+
+    const fetchNoteById = useCallback(async (noteId: string) => {
+        if (!isLoggedIn || !noteId) {
+            return null
+        }
+
+        setErrorMessage(null)
+
+        const { data, error } = await supabase
+            .from("Notes")
+            .select(
+                "id, created_by, title, content, created_at, updated_at, image_url, image_path, image_mime_type, image_size_bytes"
+            )
+            .eq("id", Number(noteId))
+            .maybeSingle()
+
+        if (error) {
+            setErrorMessage(error.message)
+            return null
+        }
+
+        if (!data) {
+            return null
+        }
+
+        const row = data as NoteRow
+        const labels = await buildCreatorLabels([row])
+        const fetchedNote = mapNoteRow(row, labels)
+
+        setNotes((prev) => {
+            const nextNotes = prev.filter((existingNote) => existingNote.id !== fetchedNote.id)
+            return [fetchedNote, ...nextNotes]
+        })
+
+        return fetchedNote
+    }, [buildCreatorLabels, isLoggedIn, mapNoteRow])
 
     useEffect(() => {
         if (!isLoggedIn || !userId) {
@@ -433,6 +472,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
                 isLoading,
                 errorMessage,
                 refreshNotes,
+                fetchNoteById,
                 addNote,
                 updateNote,
                 deleteNote,

@@ -91,10 +91,11 @@ function ThemedRootLayout() {
 
 function NotificationProviderGate({ children }: PropsWithChildren) {
   const isAndroidExpoGo = Platform.OS === "android" && Constants.executionEnvironment === "storeClient"
+  const isTestEnvironment = process.env.NODE_ENV === "test"
   const [provider, setProvider] = useState<ComponentType<PropsWithChildren> | null>(null)
 
   useEffect(() => {
-    if (isAndroidExpoGo) {
+    if (isAndroidExpoGo || isTestEnvironment) {
       return
     }
 
@@ -117,9 +118,9 @@ function NotificationProviderGate({ children }: PropsWithChildren) {
     return () => {
       isMounted = false
     }
-  }, [isAndroidExpoGo])
+  }, [isAndroidExpoGo, isTestEnvironment])
 
-  if (isAndroidExpoGo || !provider) {
+  if (isAndroidExpoGo || isTestEnvironment || !provider) {
     return children
   }
 
