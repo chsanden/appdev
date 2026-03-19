@@ -21,6 +21,7 @@ import { useAuthContext } from "@/hooks/use-auth-context"
 import { NoteImageChange, useNotes } from "@/src/notes/NotesContext"
 import { StagedNoteImage, validateStagedNoteImage } from "@/src/notes/image-utils"
 import { pickImageFromCamera, pickImageFromLibrary } from "@/src/notes/native-image-picker"
+import { usePickerLifecycleGuard } from "@/src/notes/use-picker-lifecycle-guard"
 import { detailScreenStyles as styles } from "@/src/styles/app-styles"
 import { useAppTheme } from "@/src/theme/AppThemeProvider"
 
@@ -45,6 +46,7 @@ export default function DetailScreen() {
     const insets = useSafeAreaInsets()
     const headerHeight = useHeaderHeight()
     const { colorScheme, palette } = useAppTheme()
+    const { endPicker, isScreenActive, tryBeginPicker } = usePickerLifecycleGuard()
 
     const formatTimestamp = (value: string) => {
         const parsed = new Date(value)
@@ -85,10 +87,14 @@ export default function DetailScreen() {
     }, [fetchNoteById, id, note])
 
     const attachFromCamera = async () => {
+        if (!tryBeginPicker()) {
+            return
+        }
+
         try {
             const image = await pickImageFromCamera()
 
-            if (image) {
+            if (image && isScreenActive()) {
                 validateStagedNoteImage(image)
                 setStagedImage(image)
                 setImageChange({ type: "replace", image })
@@ -96,15 +102,23 @@ export default function DetailScreen() {
                 setStatusMessage(null)
             }
         } catch (error) {
-            setLocalErrorMessage(error instanceof Error ? error.message : "The camera could not be opened.")
+            if (isScreenActive()) {
+                setLocalErrorMessage(error instanceof Error ? error.message : "The camera could not be opened.")
+            }
+        } finally {
+            endPicker()
         }
     }
 
     const attachFromGallery = async () => {
+        if (!tryBeginPicker()) {
+            return
+        }
+
         try {
             const image = await pickImageFromLibrary()
 
-            if (image) {
+            if (image && isScreenActive()) {
                 validateStagedNoteImage(image)
                 setStagedImage(image)
                 setImageChange({ type: "replace", image })
@@ -112,7 +126,11 @@ export default function DetailScreen() {
                 setStatusMessage(null)
             }
         } catch (error) {
-            setLocalErrorMessage(error instanceof Error ? error.message : "The gallery could not be opened.")
+            if (isScreenActive()) {
+                setLocalErrorMessage(error instanceof Error ? error.message : "The gallery could not be opened.")
+            }
+        } finally {
+            endPicker()
         }
     }
 
