@@ -6,8 +6,9 @@ This project is an Expo React Native note-taking app built for a SWE assignment 
 
 - Email/password authentication with Supabase Auth
 - Creating, viewing, editing, and deleting notes
+- Separate "My Notes" and "Work Notes" lists
 - Optional image upload for notes using Supabase Storage
-- Push notification support through Expo and a Supabase Edge Function fallback path
+- Remote push notifications through Expo, with a realtime-driven local notification fallback when push registration is unavailable
 
 ## Requirements
 
@@ -15,10 +16,11 @@ To build and run this project locally, you need:
 
 - Node.js (LTS recommended)
 - npm
+- Deno (only required if you want to run `npm run typecheck:functions`)
 - Expo Go on a physical device, or an Android/iOS emulator
 - A Supabase project that you configure yourself
 
-The repository does not include a committed `.env` file. That is intentional. The `.env` file is ignored by Git by design, so anyone running this project must create their own local `.env` file with their own Supabase and Expo values.
+The repository does not include a committed `.env` file. That is intentional. The app reads runtime values from your local untracked `.env` through `app.config.js`, so anyone running this project must create their own `.env` file with their own Supabase and Expo values.
 
 ## Installation
 
@@ -44,8 +46,9 @@ Notes:
 
 - `EXPO_PUBLIC_SUPABASE_URL` is the URL of your Supabase project.
 - `EXPO_PUBLIC_SUPABASE_KEY` is the public anonymous key for your Supabase project.
-- `EXPO_PUBLIC_EAS_PROJECT_ID` is optional and is only used for Expo push notification registration and related build/push flows.
+- `EXPO_PUBLIC_EAS_PROJECT_ID` is used for Expo push notification registration and related build/push flows.
 - The app requires `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_KEY` at runtime. If those two values are missing, the app will not start correctly.
+- These values are injected into Expo config by `app.config.js`.
 
 ## Build And Run Instructions
 
@@ -151,6 +154,12 @@ note-images
 
 This bucket is used to upload note images. Stored image paths are then saved in the `Notes` table.
 
+Images are validated and processed by the app with these constraints:
+
+- Allowed formats: PNG, JPG/JPEG, WEBP
+- Maximum size after processing: 15 MB
+- Large images may be resized/compressed before upload
+
 ### 5. `user_push_tokens` table
 
 For push notifications, the app expects a table named `user_push_tokens` with fields used for registering device tokens. Based on the code, it uses:
@@ -162,6 +171,34 @@ For push notifications, the app expects a table named `user_push_tokens` with fi
 - `is_active`
 - `updated_at`
 
+## Notifications
+
+The app has two notification paths:
+
+### 1. Remote push notifications
+
+On supported native builds, the app requests notification permission, obtains an Expo push token, and stores it in `user_push_tokens`.
+
+This path depends on:
+
+- A valid `EXPO_PUBLIC_EAS_PROJECT_ID`
+- A physical device
+- Notification permissions being granted
+
+Important limitation:
+
+- Android push notifications are currently not supported in Expo Go. To test Android push behavior, you need a development build or another native build type instead of Expo Go.
+
+### 2. Realtime local-notification fallback
+
+If push registration is unavailable, the app falls back to listening for new `Notes` inserts through Supabase Realtime and schedules a local notification on-device instead.
+
+This fallback can happen when:
+
+- The app is running on a simulator or emulator
+- The Expo push project ID is missing
+- Push token registration fails for another reason
+
 ## Supabase Edge Function
 
 This repository includes a Supabase Edge Function at:
@@ -170,7 +207,7 @@ This repository includes a Supabase Edge Function at:
 supabase/functions/push/index.ts
 ```
 
-That function is responsible for sending push notifications when notes are created.
+That function is responsible for sending remote push notifications when notes are created.
 
 If you want to use that function, your Supabase function environment will need its own server-side values, including:
 
@@ -184,7 +221,8 @@ Notes:
 
 - `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are required by the function code.
 - `EXPO_ACCESS_TOKEN` may be needed depending on how you configure Expo push notification delivery.
+- The function must be connected to a database webhook that sends `POST` requests for `INSERT` events on the `Notes` table.
 
 ## Important Submission Note
 
-Because `.env` is intentionally ignored by Git, this submission does not include live secrets or a working personal backend configuration. To run the project successfully, the evaluator must create their own `.env` file and connect the app to their own Supabase project configured with the expected tables, columns, and storage bucket described above.
+Because `.env` is intentionally ignored by Git, this submission does not include a committed working local backend configuration. To run the project successfully, the evaluator must create their own `.env` file and connect the app to their own Supabase project configured with the expected tables, columns, storage bucket, and notification setup described above.

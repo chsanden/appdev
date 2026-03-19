@@ -63,12 +63,7 @@
       "reactCompiler": true
     },
     "extra": {
-      "supabaseUrl": "https://mogieparkvgcobaukpsr.supabase.co",
-      "supabaseKey": "sb_publishable_V_59BIi7RykQTnH7HNMWbg_dWN9hlbS",
-      "router": {},
-      "eas": {
-        "projectId": "7eb7c779-f343-49c8-8412-286e56ee15f9"
-      }
+      "router": {}
     }
   }
 }
