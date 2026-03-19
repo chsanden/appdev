@@ -28,6 +28,49 @@ function createDeferred<T>(): Deferred<T> {
     return { promise, resolve, reject }
 }
 
+type DetailNoteResult = Promise<{
+    data: {
+        id: number
+        created_by: string
+        title: string
+        content: string
+        created_at: string
+        updated_at: string
+        image_url: null
+        image_path: null
+        image_mime_type: null
+        image_size_bytes: null
+    } | null
+    error: null
+}>
+
+type NotesQueryMock = {
+    order: jest.Mock<NotesQueryMock, []>
+    eq: jest.Mock<NotesQueryMock, [string]>
+    neq: jest.Mock<NotesQueryMock, [string]>
+    range: jest.Mock<Promise<{ data: []; error: null }>, []>
+    maybeSingle: jest.Mock<DetailNoteResult, []>
+}
+
+function createNotesSelectMock(
+    noteResult: DetailNoteResult | (() => DetailNoteResult)
+) {
+    let query!: NotesQueryMock
+
+    query = {
+        order: jest.fn(() => query),
+        eq: jest.fn((_: string) => query),
+        neq: jest.fn((_: string) => query),
+        range: jest.fn(() => Promise.resolve({ data: [], error: null })),
+        maybeSingle: jest.fn(() => {
+            const result = typeof noteResult === "function" ? noteResult() : noteResult
+            return result
+        }),
+    }
+
+    return query
+}
+
 jest.mock("expo-router", () => ({
     router: {
         replace: jest.fn(),
@@ -125,32 +168,23 @@ describe("DetailScreen", () => {
     })
 
     async function renderLoadedDetailScreen() {
-        const notesQuery = {
-            order: jest.fn(),
-            eq: jest.fn(),
-            maybeSingle: jest.fn(() =>
-                Promise.resolve({
-                    data: {
-                        id: 42,
-                        created_by: "user-1",
-                        title: "Fetched note",
-                        content: "Loaded from Supabase for the integration test",
-                        created_at: "2026-03-18T10:00:00.000Z",
-                        updated_at: "2026-03-18T10:05:00.000Z",
-                        image_url: null,
-                        image_path: null,
-                        image_mime_type: null,
-                        image_size_bytes: null,
-                    },
-                    error: null,
-                })
-            ),
-        }
-
-        notesQuery.order
-            .mockImplementationOnce(() => notesQuery)
-            .mockImplementationOnce(() => Promise.resolve({ data: [], error: null }))
-        notesQuery.eq.mockReturnValue(notesQuery)
+        const notesQuery = createNotesSelectMock(
+            Promise.resolve({
+                data: {
+                    id: 42,
+                    created_by: "user-1",
+                    title: "Fetched note",
+                    content: "Loaded from Supabase for the integration test",
+                    created_at: "2026-03-18T10:00:00.000Z",
+                    updated_at: "2026-03-18T10:05:00.000Z",
+                    image_url: null,
+                    image_path: null,
+                    image_mime_type: null,
+                    image_size_bytes: null,
+                },
+                error: null,
+            })
+        )
 
         mockSupabase.from.mockImplementation((table: string) => {
             if (table === "Notes") {
@@ -209,16 +243,7 @@ describe("DetailScreen", () => {
             } | null
             error: null
         }>()
-        const notesQuery = {
-            order: jest.fn(),
-            eq: jest.fn(),
-            maybeSingle: jest.fn(() => deferredNote.promise),
-        }
-
-        notesQuery.order
-            .mockImplementationOnce(() => notesQuery)
-            .mockImplementationOnce(() => Promise.resolve({ data: [], error: null }))
-        notesQuery.eq.mockReturnValue(notesQuery)
+        const notesQuery = createNotesSelectMock(() => deferredNote.promise)
 
         mockSupabase.from.mockImplementation((table: string) => {
             if (table === "Notes") {

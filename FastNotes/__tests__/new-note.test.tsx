@@ -98,7 +98,12 @@ describe("NewNoteScreen", () => {
         mockUseNotes.mockReturnValue({
             notes: [],
             isLoading: false,
+            isLoadingMoreMyNotes: false,
+            isLoadingMoreWorkNotes: false,
             refreshNotes: jest.fn(),
+            loadMoreNotes: jest.fn(),
+            hasMoreMyNotes: false,
+            hasMoreWorkNotes: false,
             fetchNoteById: jest.fn(),
             addNote: mockAddNote,
             updateNote: jest.fn(),
