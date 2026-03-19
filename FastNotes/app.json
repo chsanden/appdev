@@ -2,7 +2,7 @@
   "expo": {
     "name": "FastNotes",
     "slug": "FastNotes",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "fastnotes",
@@ -10,7 +10,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.fastnotes.app"
+      "bundleIdentifier": "com.fastnotes.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.fastnotes.app",
@@ -58,6 +61,14 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "supabaseUrl": "https://mogieparkvgcobaukpsr.supabase.co",
+      "supabaseKey": "sb_publishable_V_59BIi7RykQTnH7HNMWbg_dWN9hlbS",
+      "router": {},
+      "eas": {
+        "projectId": "7eb7c779-f343-49c8-8412-286e56ee15f9"
+      }
     }
   }
 }
