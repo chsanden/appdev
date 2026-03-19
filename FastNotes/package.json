@@ -23,6 +23,7 @@
     "@supabase/supabase-js": "^2.98.0",
     "async-storage": "^0.1.0",
     "deno": "^2.7.6",
+    "eas-cli": "^18.4.0",
     "expo": "~54.0.33",
     "expo-blur": "~15.0.8",
     "expo-constants": "~18.0.13",
